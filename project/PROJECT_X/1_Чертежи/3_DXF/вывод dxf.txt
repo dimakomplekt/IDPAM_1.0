@@ -1,0 +1,513 @@
+﻿Option Explicit
+
+Sub Main()
+
+    ' Настройка обработки ошибок
+    Dim assembly_error As Boolean: assembly_error = False
+    Dim has_error As Boolean: has_error = False
+    Dim export_error As Boolean: export_error = False
+
+    On Error GoTo handle_common_error
+
+    ' Проверка сборки
+    check_assembly(assembly_error)
+    If assembly_error Then GoTo handle_assembly_error
+
+
+    ' Глобальные переменные
+
+    ' Имя ини-файла для настройки DXF-вывода
+    Dim dxf_ini_name As String
+    dxf_ini_name = "Под резку.ini"
+
+    Dim current_assembly_path As String ' Путь до текущей сборки
+    current_assembly_path = ThisApplication.ActiveDocument.FullFileName
+
+    Dim current_assembly_path_tmp As String ' Путь до текущей сборки - сохранение
+    current_assembly_path_tmp = current_assembly_path
+
+    ' Базовая папка из адреса текущей подсборки
+    Dim base_folder_path As String ' Основная папка проекта конструкции
+    base_folder_path = find_base_folder_path(current_assembly_path)
+
+    ' Проверка структуры проекта
+    If (base_folder_path  = "") Then
+
+        has_error = True
+        GoTo handle_common_error
+
+    End If
+
+
+    ' Папка для DXF из адреса основной папки
+    Dim dxf_folder_path As String ' Папка для хранения DXF
+    dxf_folder_path = find_dxf_folder_path(base_folder_path)
+
+    ' Проверка структуры проекта
+    If (dxf_folder_path = "") Then
+
+        has_error = True
+        GoTo handle_common_error
+
+    End If
+
+
+    ' Путь до ини-файла настройки DXF-вывода через папку для хранения DXF
+    Dim ini_file_path As String 
+    ini_file_path = find_ini_file_path(dxf_folder_path, dxf_ini_name)
+
+    ' Проверка структуры проекта
+    If (ini_file_path = "") Then
+
+        has_error = True
+        GoTo handle_common_error
+
+    End If
+
+
+    ' Инициируем список формата [[Имя подсборки, [Путь к детали, Путь к детали], ...] для подсборок внутри списка
+    ' assemblies_root, если там внутри есть деталь листовой металл 
+    Dim assemblies_with_sheet_metal As Object
+    assemblies_with_sheet_metal = CreateObject("System.Collections.ArrayList")
+
+    Dim isRoot As Boolean
+    isRoot =  True
+
+    ' Расширяем инициированный список подсборками и деталями
+    Dim addedAssemblies As Object
+    addedAssemblies = CreateObject("Scripting.Dictionary")
+
+    Call collect_assemblies_and_sheet_metal(ThisApplication.ActiveDocument.ComponentDefinition.Occurrences, assemblies_with_sheet_metal, isRoot, ThisApplication.ActiveDocument, addedAssemblies)
+
+    Call LogAssembliesWithSheetMetal(assemblies_with_sheet_metal)
+
+
+    ' Производим экспорт всех деталей для всех подсборок в списке, создавая под них папки в папке для DXF
+    export_dxf_for_curerrent_assembly(assemblies_with_sheet_metal, dxf_folder_path, ini_file_path, export_error)
+
+
+    If export_error Then GoTo handle_export_error
+
+    ' --- Успешное завершение ---
+    MsgBox("Программа выполнена успешно")
+
+
+    Dim doc As Document
+    doc = ThisApplication.Documents.Open(current_assembly_path_tmp, True) ' True → открыть и активировать
+    doc.Activate
+
+    Exit Sub
+
+handle_common_error:
+    MsgBox("Произошла системная ошибка: " & Err.Description, vbCritical, "Error")
+    Exit Sub
+
+handle_assembly_error:
+    MsgBox("Open an assembly before running this rule.", vbCritical, "Error")
+    Exit Sub
+
+handle_export_error:
+    MsgBox("Export error!", vbCritical, "Error")
+    Exit Sub
+End Sub
+
+
+' Вспомогательный саб для чека сборки
+Sub check_assembly(ByRef assembly_error As Boolean)
+
+    If ThisApplication.ActiveDocument Is Nothing Or _
+       ThisApplication.ActiveDocument.DocumentType <> kAssemblyDocumentObject Then
+
+        assembly_error = True
+        Exit Sub
+
+    End If
+
+End Sub
+
+
+' Вспомогательная функция для поиска корня проекта
+Function find_base_folder_path(current_assembly_path As String) As String
+
+    Dim project_root As String
+    project_root = ""
+
+    Dim fso As Object
+    fso = CreateObject("Scripting.FileSystemObject") ' Object, без Set
+
+    Dim cur As String
+    cur = current_assembly_path
+
+    ' Итеративный спуск до корневой папки
+    Do While (cur <> "")
+
+        ' Проверка признаков корня проекта
+        If (Dir(cur & "\4_Модели", vbDirectory) <> "") And (Dir(cur & "\5_Чертежи", vbDirectory) <> "") Then
+
+            project_root = cur
+            Exit Do
+
+        End If
+
+        ' Если достигли корня диска
+        If (fso.GetParentFolderName(cur) = "") Then Exit Do
+        
+        ' Итерация
+        cur = fso.GetParentFolderName(cur)
+    Loop
+
+    ' Если не найден корень проекта
+    If (project_root = "") Then
+
+        MsgBox("Project root not found (expected folders: 4_Модели and 5_Чертежи).", vbCritical, "Error")
+        find_base_folder_path = ""  ' Возврат пустой строки при ошибке
+        Exit Function
+
+    End If
+
+    find_base_folder_path = project_root ' Возврат найденного пути
+
+End Function
+
+
+' Вспомогательная функция для поиска папки для DXF
+Function find_dxf_folder_path(base_folder_path As String) As String
+
+    Dim dxf_folder As String
+    dxf_folder = base_folder_path & "\5_Чертежи\3_DXF"
+
+    ' Проверка существования папки
+    If Dir(dxf_folder, vbDirectory) = "" Then
+        ' Папка не найдена — возвращаем пустую строку
+         MsgBox("Project folders not found (expected folders: 5_Чертежи and 3_DXF).", vbCritical, "Error")
+        find_dxf_folder_path = ""
+
+    Else
+        ' Папка существует — возвращаем путь
+        find_dxf_folder_path = dxf_folder
+
+    End If
+
+End Function
+
+
+' Вспомогательная функция для поиска пути к ини-файлу настройки вывода в DXF
+Function find_ini_file_path(dxf_folder_path As String, dxf_ini_name As String) As String
+
+    Dim ini_path As String
+    ini_path = dxf_folder_path & "\" & dxf_ini_name
+
+    ' Проверка существования файла
+    If Dir(ini_path) = "" Then
+        ' Файл не найден — выводим название файла в сообщении
+        MsgBox("Project file not found (expected file: " & dxf_ini_name & ").", vbCritical, "Error")
+        find_ini_file_path = ""
+    Else
+        ' Файл найден — возвращаем полный путь
+        find_ini_file_path = ini_path
+    End If
+
+End Function
+
+
+' Саб для получения списка сборка - детали, содержащих детали из листового металла
+' и списка деталей из листового металла в этих сборках
+Sub collect_assemblies_and_sheet_metal(occurrences As Object, assemblies As Object, isRoot As Boolean, rootDoc As Object, addedAssemblies As Object)
+    
+    ' --- Инициализация словаря для защиты от повторов ---
+    If addedAssemblies Is Nothing Then addedAssemblies = CreateObject("Scripting.Dictionary")
+    
+    Dim asmPath As String
+    Dim asmName As String
+    
+    ' --- Определяем имя и путь текущей сборки ---
+    If isRoot And Not rootDoc Is Nothing Then
+        asmPath = rootDoc.FullFileName
+        asmName = rootDoc.DisplayName
+    Else
+        If occurrences.Count > 0 Then
+            asmPath = occurrences(1).Parent.Document.FullFileName
+            asmName = occurrences(1).Parent.Document.DisplayName
+        Else
+            asmPath = ""
+            asmName = "Unnamed"
+        End If
+    End If
+    
+    ' --- Проверка словаря на повторное добавление ---
+    If addedAssemblies.Exists(asmPath) Then Exit Sub
+    Call addedAssemblies.Add(asmPath, True)
+    
+    ' --- Создаём запись сборки ---
+    Dim currentEntry(1) As Object
+    currentEntry(0) = asmName
+    currentEntry(1) = CreateObject("System.Collections.ArrayList")
+    
+    ' --- 1. Добавляем листовые детали текущего уровня ---
+    Dim occ As Object
+    For Each occ In occurrences
+        If TypeName(occ.Definition) = "SheetMetalComponentDefinition" Then
+            Dim fullPath As String
+            fullPath = occ.Definition.Document.FullFileName
+            If Not currentEntry(1).Contains(fullPath) Then
+                Call currentEntry(1).Add(fullPath)
+            End If
+        End If
+    Next
+    
+    ' --- 2. Добавляем запись в assemblies только если есть листовые детали ---
+    If currentEntry(1).Count > 0 Then
+        Call assemblies.Add(currentEntry)
+    End If
+    
+    ' --- 3. Рекурсивно идём по подсборкам ---
+    For Each occ In occurrences
+        If TypeName(occ.Definition) = "AssemblyComponentDefinition" Then
+            Call collect_assemblies_and_sheet_metal(occ.Definition.Occurrences, assemblies, False, Nothing, addedAssemblies)
+        End If
+    Next
+
+End Sub
+
+
+Sub export_dxf_for_curerrent_assembly(assemblies_with_sheet_metal As Object, dxf_folder_path As String, ini_file_path As String, ByRef export_error As Boolean)
+
+    Dim asm_entry As Object
+    Dim i As Long
+
+    For Each asm_entry In assemblies_with_sheet_metal
+
+        ' --- подготовка имени папки сборки ---
+        Dim clean_sub_name As String
+        clean_sub_name = asm_entry(0)
+
+        If InStrRev(clean_sub_name, ".") > 0 Then
+            clean_sub_name = Left(clean_sub_name, InStrRev(clean_sub_name, ".") - 1)
+        End If
+
+        Dim invalidChars As String
+        invalidChars = "/\[]*?<>|:"
+        For k = 1 To Len(invalidChars)
+            clean_sub_name = Replace(clean_sub_name, Mid(invalidChars, k, 1), "_")
+        Next
+
+        Dim arr() As String
+        arr = Split(clean_sub_name, "_")
+        If UBound(arr) > 0 Then
+            If IsNumeric(arr(UBound(arr))) Then
+                ReDim Preserve arr(UBound(arr) - 1)
+                clean_sub_name = Join(arr, "_")
+            End If
+        End If
+
+        Dim subfolder_path As String
+        subfolder_path = dxf_folder_path & "\" & clean_sub_name
+        If Dir(subfolder_path, vbDirectory) = "" Then MkDir(subfolder_path)
+
+        ' --- подготовка деталей ---
+        Dim sheet_parts As Object
+        sheet_parts = asm_entry(1)
+
+        Dim part_as_str As Object
+        Dim partIndex As Integer
+        partIndex = 1
+
+        For Each part_as_str In sheet_parts
+            On Error Resume Next
+
+            Dim part_as_component As Object
+            part_as_component = ThisApplication.Documents.Open(part_as_str, False)
+
+            If Not part_as_component Is Nothing Then
+                Dim oDef As Object
+                oDef = part_as_component.ComponentDefinitions(1)
+
+                If TypeName(oDef) = "SheetMetalComponentDefinition" Then
+                    Dim smPartDoc As Object
+                    smPartDoc = oDef.Document
+
+                    If Not oDef.HasFlatPattern Then
+                        oDef.Unfold()
+                        oDef.FlatPattern.ExitEdit()
+                    End If
+
+                    Dim oDrawing As Object
+                    oDrawing = ThisApplication.Documents.Add(DocumentTypeEnum.kDrawingDocumentObject, , False)
+                    oDrawing.UnitsOfMeasure.LengthUnits = UnitsTypeEnum.kMillimeterLengthUnits
+
+                    Dim oTG As Object
+                    oTG = ThisApplication.TransientGeometry
+                    Dim oX As Double
+                    oX = 0
+                    Dim oY As Double
+                    oY = 0
+                    Dim oBaseViewOptions As Object
+                    oBaseViewOptions = ThisApplication.TransientObjects.CreateNameValueMap()
+                    Call oBaseViewOptions.Add("SheetMetalFoldedModel", False)
+
+                    Dim oSheet As Object
+                    oSheet = oDrawing.ActiveSheet
+
+                    Dim oView As Object
+                    oView = oSheet.DrawingViews.AddBaseView(smPartDoc, oTG.CreatePoint2d(oX, oY), 1, _
+                        ViewOrientationTypeEnum.kDefaultViewOrientation, _
+                        DrawingViewStyleEnum.kHiddenLineRemovedDrawingViewStyle, _
+                        "FlatPattern", , oBaseViewOptions)
+
+
+                    Dim thickness_mm As Double
+                    Dim thickness_str As String
+                    Dim dotPos As Long
+                    Dim s As String
+
+                    ' Получаем толщину
+                    thickness_mm = oDef.Thickness.Value * 10
+
+                    ' Превращаем в строку
+                    s = CStr(thickness_mm)
+
+                    ' Ищем точку или запятую
+                    dotPos = InStr(s, ".")
+                    If dotPos = 0 Then dotPos = InStr(s, ",")  ' на случай локали с запятой
+
+                    If dotPos > 0 Then
+                        ' Берём до двух знаков после точки
+                        thickness_str = Left(s, dotPos + 2)
+                    Else
+                        ' Если точки нет, оставляем как есть
+                        thickness_str = s
+                    End If
+
+                    ' Присваиваем имя виду
+                    oView.Name = smPartDoc.DisplayName & " - " & thickness_str & " мм"
+                    oView.ShowLabel = True
+
+
+                    Call RemoveBendLines(oView, oDef.FlatPattern)
+
+                    Dim part_file_name As String
+                    part_file_name = Mid(part_as_str, InStrRev(part_as_str, "\") + 1)
+                    If InStrRev(part_file_name, ".") > 0 Then
+                        part_file_name = Left(part_file_name, InStrRev(part_file_name, ".") - 1)
+                    End If
+
+                    ' очистка имени детали
+                    For n = 1 To Len(invalidChars)
+                        part_file_name = Replace(part_file_name, Mid(invalidChars, n, 1), "_")
+                    Next
+
+                    Dim oDXFName As String
+                    oDXFName = subfolder_path & "\" & part_file_name & "_развертка.dxf"
+                    Call SaveDXF(oDrawing, oDXFName, ini_file_path)
+
+                    Call oDrawing.Close()
+                    partIndex = partIndex + 1
+                End If
+
+                Call part_as_component.Close(True)
+            End If
+            On Error GoTo 0
+        Next
+    Next
+
+    MsgBox("DXF Export Completed", vbInformation)
+End Sub
+
+
+
+'====================================================
+' Убираем линии сгиба из вида
+'====================================================
+Sub RemoveBendLines(oView As DrawingView, oFlatPattern As FlatPattern)
+    Dim oBendEdgesUp As Edges
+    oBendEdgesUp = oFlatPattern.GetEdgesOfType(FlatPatternEdgeTypeEnum.kBendUpFlatPatternEdge)
+
+    Dim oBendEdgesDown As Edges
+    oBendEdgesDown = oFlatPattern.GetEdgesOfType(FlatPatternEdgeTypeEnum.kBendDownFlatPatternEdge)
+
+    Dim oEdge As Edge
+    Dim oCurve As DrawingCurve
+    Dim oSegment As DrawingCurveSegment
+
+    For Each oEdge In oBendEdgesUp
+        For Each oCurve In oView.DrawingCurves(oEdge)
+            For Each oSegment In oCurve.Segments
+                oSegment.Visible = False
+            Next
+        Next
+    Next
+
+    For Each oEdge In oBendEdgesDown
+        For Each oCurve In oView.DrawingCurves(oEdge)
+            For Each oSegment In oCurve.Segments
+                oSegment.Visible = False
+            Next
+        Next
+    Next
+End Sub
+
+'====================================================
+' Сохраняем DrawingDocument в DXF
+'====================================================
+Sub SaveDXF(oDrawing As DrawingDocument, oFileName As String, oIniFile As String)
+	'a reference to the DFX translator
+	Dim DXFAddIn As TranslatorAddIn
+	DXFAddIn = ThisApplication.ApplicationAddIns.ItemById("{C24E3AC4-122E-11D5-8E91-0010B541CD80}")
+
+	'Create translation context
+	Dim oContext As TranslationContext = ThisApplication.TransientObjects.CreateTranslationContext
+	oContext.Type = IOMechanismEnum.kFileBrowseIOMechanism
+	'Create options for the translation
+	Dim oOptions As NameValueMap = ThisApplication.TransientObjects.CreateNameValueMap
+	'Create a DataMedium object
+	Dim oDataMedium As DataMedium = ThisApplication.TransientObjects.CreateDataMedium
+	'the options (which .ini-file to use)
+	If DXFAddIn.HasSaveCopyAsOptions(oDrawing, oContext, oOptions) Then
+		oOptions.Value("Export_Acad_IniFile") = oIniFile
+	End If
+	'the filename property of the DataMedium object
+	oDataMedium.FileName = oFileName
+
+    DXFAddIn.SaveCopyAs(oDrawing, oContext, oOptions, oDataMedium)
+End Sub
+
+'====================================================
+' Создаем текстовый файл
+'====================================================
+Sub CreateTXT(oText As String, oFileName As String)
+    Dim oTxtWriter As Object
+    oTxtWriter = CreateObject("Scripting.FileSystemObject").CreateTextFile(oFileName, True)
+    oTxtWriter.WriteLine(oText)
+    oTxtWriter.Close
+End Sub
+
+' Логирование ArrayList assemblies_root
+Sub LogAssembliesRoot(assemblies_root As Object)
+    Dim msg As String
+    msg = "=== assemblies_root ===" & vbCrLf
+
+    Dim assembly As Object
+    For Each assembly In assemblies_root
+        msg = msg & "Name: " & assembly(0) & " | Path: " & assembly(1) & vbCrLf
+    Next
+ 
+    MsgBox(msg, vbInformation, "assemblies_root log")
+End Sub
+
+' Логирование ArrayList assemblies_with_sheet_metal
+Sub LogAssembliesWithSheetMetal(assemblies_with_sheet_metal As Object)
+    Dim msg As String
+    msg = "=== assemblies_with_sheet_metal ===" & vbCrLf
+
+    Dim entry As Object
+    Dim sheetPart As Object
+
+    For Each entry In assemblies_with_sheet_metal
+        msg = msg & "Subassembly: " & entry(0) & vbCrLf
+        For Each sheetPart In entry(1)
+            msg = msg & "  sheet part: " & sheetPart & vbCrLf
+        Next
+    Next
+
+    MsgBox(msg, vbInformation, "assemblies_with_sheet_metal log")
+End Sub

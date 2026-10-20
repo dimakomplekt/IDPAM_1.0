@@ -67,11 +67,31 @@ Sub Main()
     ' БАЗОВЫЕ НАСТРОЙКИ МАКРОСА
     ' =====================================================
 
+
+
     Dim controlled_code As String
     controlled_code = "PZ.0066."
 
     Dim drawings_relative_path As String
     drawings_relative_path = "..\1_Чертежи\1_DWG"
+
+
+
+    Dim detail_absolute_path As String
+    detail_absolute_path = 
+        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\detail.idw"
+
+
+    Dim detail_relative_path As String
+    
+
+    Dim assembly_absolute_path As String
+    assembly_absolute_path =
+        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\assembly.idw"
+
+    Dim assembly_relative_path As String
+
+
 
     Dim detail_template_path As String
     detail_template_path = _

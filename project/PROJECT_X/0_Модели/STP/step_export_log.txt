@@ -1,0 +1,12 @@
+STEP export report
+Generated at: 22.10.2026 17:52:29
+Controlled code: PROJECT_X.
+Target folder: C:\Users\dmitrii.kriskovets\Desktop\it\5\IDPAM_1.0\project\PROJECT_X\0_Модели\STP
+Candidates total: 1
+Exported: 1
+Skipped: 0
+Failed: 0
+
+Exported files:
+ - C:\Users\dmitrii.kriskovets\Desktop\it\5\IDPAM_1.0\project\PROJECT_X\0_Модели\STP\PROJECT_X.0001 - Сборка 1.stp
+

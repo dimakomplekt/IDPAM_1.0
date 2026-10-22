@@ -50,9 +50,14 @@ Sub Main()
     ' БАЗОВЫЕ НАСТРОЙКИ МАКРОСА
     ' =====================================================
 
-    Dim controlled_code As String
-    controlled_code = "PZ.0060."
 
+    ' ====== !!! ИЗМЕНЕНИЕ ОБОЗНАЧЕНИЯ ПРОЕКТНЫХ ИЗДЕЛИЙ !!! ======
+
+    Dim controlled_code As String
+    controlled_code = "PROJECT_X."
+
+    ' ====== !!! ИЗМЕНЕНИЕ ОБОЗНАЧЕНИЯ ПРОЕКТНЫХ ИЗДЕЛИЙ !!! ======
+    
     Dim step_relative_path As String
     step_relative_path = "/STP"
 

@@ -68,42 +68,54 @@ Sub Main()
     ' =====================================================
 
 
+    ' ====== !!! Тут задаётся основная часть обозначения проектных изделий (детали / сборки) !!! ======
 
     Dim controlled_code As String
-    controlled_code = "PZ.0066."
+    controlled_code = "PROJECT_X."                                             
 
     Dim drawings_relative_path As String
     drawings_relative_path = "..\1_Чертежи\1_DWG"
 
 
 
-    Dim detail_absolute_path As String
-    detail_absolute_path = 
-        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\detail.idw"
+   ' =====================================================
+    ' 1. ПОЛУЧЕНИЕ ПУТИ ОСНОВНОЙ СБОРКИ И ЕЕ ПАПКИ
+    ' =====================================================
+    Dim current_assembly_file As String
+    current_assembly_file = ThisApplication.ActiveDocument.FullFileName
+
+    If current_assembly_file = "" Then
+        MsgBox( _
+            "Основная сборка ещё не сохранена." & vbCrLf & _
+            "Перед запуском макроса необходимо сохранить сборку.", _
+            vbExclamation, _
+            "Генератор чертежей")
+        Exit Sub
+    End If
+
+    ' Извлекаем чистый путь к папке, где лежит сборка (например, "C:\PROJECT_X\0_Модели")
+    Dim current_assembly_dir As String
+    current_assembly_dir = System.IO.Path.GetDirectoryName(current_assembly_file)
 
 
-    Dim detail_relative_path As String
+    ' Current   - PROJECT_X\0_Модели
+    ' Templates - PROJECT_X\4_Прочее\1_Шаблоны чертежей
+    ' Relative  - "..\4_Прочее\1_Шаблоны чертежей"
+
+    ' Используем System.IO.Path.GetFullPath, чтобы автоматически разрешить ".." 
+    ' и получить красивый, чистый абсолютный путь к шаблонам.
     
-
-    Dim assembly_absolute_path As String
-    assembly_absolute_path =
-        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\assembly.idw"
-
-    Dim assembly_relative_path As String
-
-
-
     Dim detail_template_path As String
-    detail_template_path = _
-        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\detail.idw"
+    detail_template_path = System.IO.Path.GetFullPath( _
+        System.IO.Path.Combine(current_assembly_dir, "..\4_Прочее\1_Шаблоны чертежей\detail.idw"))
 
     Dim assembly_template_path As String
-    assembly_template_path = _
-        "Y:\000_Библиотека\400_RnD\099_iLogicRepository\Templates\ru-RU\kriskovets\assembly.idw"
+    assembly_template_path = System.IO.Path.GetFullPath( _
+        System.IO.Path.Combine(current_assembly_dir, "..\4_Прочее\1_Шаблоны чертежей\assembly.idw"))
 
 
     ' =====================================================
-    ' 1. ПРОВЕРКА ВХОДНОГО ДОКУМЕНТА
+    ' 2. ПРОВЕРКА ВХОДНОГО ДОКУМЕНТА
     ' =====================================================
     '
     ' Pipeline:
@@ -126,35 +138,6 @@ Sub Main()
 
     If assembly_error Then
         Exit Sub
-    End If
-
-
-    ' =====================================================
-    ' 2. ПОЛУЧЕНИЕ ПУТИ ОСНОВНОЙ СБОРКИ
-    ' =====================================================
-    '
-    ' На этом этапе нам нужен физический путь основной сборки.
-    '
-    ' Он используется как отправная точка для:
-    '
-    '   - определения папки сборки;
-    '   - построения относительного пути к DWG;
-    '   - дальнейшего формирования абсолютных путей.
-    '
-
-    Dim current_assembly_path As String
-    current_assembly_path = ThisApplication.ActiveDocument.FullFileName
-
-    If current_assembly_path = "" Then
-
-        MsgBox( _
-            "Основная сборка ещё не сохранена." & vbCrLf & _
-            "Перед запуском макроса необходимо сохранить сборку.", _
-            vbExclamation, _
-            "Генератор чертежей")
-
-        Exit Sub
-
     End If
 
 

@@ -1,5 +1,5 @@
 STEP export report
-Generated at: 22.10.2026 17:52:29
+Generated at: 23.10.2026 17:00:58
 Controlled code: PROJECT_X.
 Target folder: C:\Users\dmitrii.kriskovets\Desktop\it\5\IDPAM_1.0\project\PROJECT_X\0_Модели\STP
 Candidates total: 1

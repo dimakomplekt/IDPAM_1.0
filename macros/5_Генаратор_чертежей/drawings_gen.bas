@@ -148,6 +148,9 @@ Sub Main()
     Dim fso As Object
     fso = CreateObject("Scripting.FileSystemObject")
 
+	Dim current_assembly_path As String
+    current_assembly_path = ThisDoc.Document.FullFileName
+    
     Dim assembly_folder_path As String
     assembly_folder_path = _
         fso.GetParentFolderName(current_assembly_path)

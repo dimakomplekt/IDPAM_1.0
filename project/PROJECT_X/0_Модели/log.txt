@@ -1,0 +1,46 @@
+
+---------------------------------------------------------
+project_x.0001 - сборка 1.iam
+---------------------------------------------------------
+part_number: PROJECT_X.0001
+part_name: Сборка 1
+part_type: Сборка
+part_developer: Ивлев
+developer_date: 15.10.2026
+part_test: Летов
+test_date: 15.10.2026
+part_tech_control: -
+tech_control_date: -
+part_department_head: Летов
+department_head_date: 15.10.2026
+part_norms_control: Летов
+norms_control_date: 15.10.2026
+part_approved_by: Летов
+part_approved_date: 15.10.2026
+part_company: ООО "МОЯ ОБОРОНА"
+
+---------------------------------------------------------
+
+
+---------------------------------------------------------
+project_x.0002 - деталь 1.ipt
+---------------------------------------------------------
+part_number: PROJECT_X.0002
+part_name: Деталь 1
+part_type: Деталь
+part_developer: Ивлев
+developer_date: 15.10.2026
+part_test: Летов
+test_date: 15.10.2026
+part_tech_control: -
+tech_control_date: -
+part_department_head: Летов
+department_head_date: 15.10.2026
+part_norms_control: Летов
+norms_control_date: 15.10.2026
+part_approved_by: Летов
+part_approved_date: 15.10.2026
+part_company: ООО "МОЯ ОБОРОНА"
+
+---------------------------------------------------------
+

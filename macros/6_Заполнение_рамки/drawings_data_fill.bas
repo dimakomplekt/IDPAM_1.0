@@ -1,6 +1,5 @@
 Option Explicit
 
-
 ' =========================================================
 ' ПАКЕТНАЯ СИНХРОНИЗАЦИЯ ЧЕРТЕЖЕЙ
 ' =========================================================
@@ -63,6 +62,35 @@ Sub Main()
     Dim files() As String
     files = System.IO.Directory.GetFiles(root_dir, "*.idw")
 
+    Dim valid_file_count As Integer
+    valid_file_count = 0
+
+    Dim loop_file_path As String
+    For Each loop_file_path In files
+        Dim loop_file_name As String
+        loop_file_name = System.IO.Path.GetFileName(loop_file_path)
+
+        If Not excluded_files.Contains(loop_file_name) Then
+            valid_file_count = valid_file_count + 1
+        End If
+    Next
+
+    Dim total_items As Integer
+    total_items = valid_file_count
+
+    If total_items <= 0 Then
+        total_items = 1
+    End If
+
+    Dim processed_items As Integer
+    processed_items = 0
+
+    Dim progress_bar As Object
+    progress_bar = ThisApplication.CreateProgressBar( _
+        False, _
+        total_items, _
+        "Заполнение данных чертежей")
+
 
     ' =========================
     ' 4. ГЛАВНЫЙ TRY (UI-КОНТРОЛЬ)
@@ -90,6 +118,15 @@ Sub Main()
             ' Пропускаем файлы-исключения
             If excluded_files.Contains(file_name) Then
                 Continue For
+            End If
+
+            processed_items = processed_items + 1
+
+            If Not progress_bar Is Nothing Then
+                progress_bar.Message = _
+                    "Обработка чертежа " & processed_items & " / " & total_items & _
+                    ": " & file_name
+                progress_bar.UpdateProgress
             End If
 
 
@@ -147,6 +184,10 @@ Sub Main()
         Next
 
     Finally
+
+        If Not progress_bar Is Nothing Then
+            progress_bar.Close
+        End If
 
         ' ВАЖНО: возвращаем обновление UI
         ThisApplication.ScreenUpdating = True

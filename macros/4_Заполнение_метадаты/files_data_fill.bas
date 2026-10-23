@@ -18,57 +18,69 @@ Option Explicit
 
 Sub Main()
 
-' Точка входа всей системы синхронизации Inventor ↔ Excel
-'
-' Общий поток:
-'
-' 1. Проверка активного документа
-' 2. Проверка, что это сборка (Assembly)
-' 3. Определение корневой папки проекта
-' 4. Поиск Excel-ведомости
-' 5. Инициализация debug-лога
-' 6. Запуск Excel через COM
-' 7. Загрузка таблицы
-' 8. Инициализация visited (защита от повторной обработки)
-' 9. Обход корневого документа и всей структуры сборки
-' 10. Закрытие Excel
-' 11. Запись итогового лога
-' 12. Завершение работы
+    Dim active_document As Document
+    active_document = ThisApplication.ActiveDocument
 
-    ' Имя листа части ведомости для парсинга
-    Dim SHEET_FOR_DATA_PARSE = "НА ПАРСИНГ" 
+    ' Проверка: есть ли открытый документ
+    If active_document Is Nothing Then
+        MessageBox.Show("Откройте сборку")
+        Exit Sub
+    End If
+
+    ' Проверка: это именно сборка, а не деталь (мы обязаны запускать макрос из общей сборки изделия)
+    If Not TypeOf active_document Is AssemblyDocument Then
+        MessageBox.Show("Нужна сборка")
+        Exit Sub
+    End If
+
+    Dim root_assembly As AssemblyDocument
+    root_assembly = active_document
+
+    Dim unique_documents As Object
+    unique_documents = CreateObject("Scripting.Dictionary")
+
+
+	Dim root_file_name As String
+	
+	Try
+	    root_file_name = root_assembly.FullFileName
+	Catch ex As Exception
+	    MessageBox.Show("Не удалось получить FullFileName корневой сборки: " & ex.Message)
+	    Exit Sub
+	End Try
+	
+	If root_file_name <> "" Then
+	    unique_documents.Add(root_file_name, True)
+	End If
+
+
+    Dim total_documents As Integer
+    total_documents = 1 + count_unique_occurrences(root_assembly.ComponentDefinition.Occurrences, unique_documents)
+
+    If total_documents <= 0 Then
+        total_documents = 1
+    End If
+
+    Dim processed_documents As Integer
+    processed_documents = 0
+
+    Dim progress_bar As Object
+    progress_bar = ThisApplication.CreateProgressBar( _
+        False, _
+        total_documents, _
+        "Заполнение метаданных")
+
+    Dim SHEET_FOR_DATA_PARSE = "НА ПАРСИНГ"
 
     Try
-
-        Dim active_document As Document
-        active_document = ThisApplication.ActiveDocument
-
-        ' Проверка: есть ли открытый документ
-        If active_document Is Nothing Then
-            MessageBox.Show("Откройте сборку")
-            Exit Sub
-        End If
-
-        ' Проверка: это именно сборка, а не деталь (мы обязаны запускать макрос из общей сборки изделия)
-        If Not TypeOf active_document Is AssemblyDocument Then
-            MessageBox.Show("Нужна сборка")
-            Exit Sub
-        End If
-
-
-        Dim root_assembly As AssemblyDocument
-        root_assembly = active_document
-
 
         ' Базовая папка проекта (где лежит сборка)
         Dim root_folder As String
         root_folder = get_parent_folder_name(root_assembly.FullFileName)
 
-
         ' Путь к ведомости состава изделия
         Dim excel_path As String
         excel_path = path_combine(root_folder, "0.2_Ведомость состава изделия.xlsx")
-
 
         ' Проверка наличия Excel-файла
         If Not System.IO.File.Exists(excel_path) Then
@@ -95,39 +107,95 @@ Sub Main()
         workbook = excel_app.Workbooks.Open(excel_path)
         worksheet = get_worksheet_by_name_safe(workbook, SHEET_FOR_DATA_PARSE)
 
-
         ' Список уже обработанных файлов (защита от повторов)
         Dim visited As Object
         visited = CreateObject("Scripting.Dictionary")
-
 
         ' Итоговый лог обработки всех документов
         Dim log As String
 
         ' Обработка корневой сборки
-        process_document(root_assembly, worksheet, visited, log, True, debug_path)
+        process_document(root_assembly, worksheet, visited, log, True, debug_path, progress_bar, processed_documents, total_documents)
 
         ' Рекурсивный обход всей структуры сборки
-        process_occurrences(root_assembly.ComponentDefinition.Occurrences, worksheet, visited, log, debug_path)
+        process_occurrences(root_assembly.ComponentDefinition.Occurrences, worksheet, visited, log, debug_path, progress_bar, processed_documents, total_documents)
 
         ' Закрытие Excel без сохранения изменений
         workbook.Close(False)
         excel_app.Quit
 
-
         ' Запись итогового отчёта
         Dim log_path As String
         log_path = write_log_file(root_folder, log)
 
+        If Not progress_bar Is Nothing Then
+            progress_bar.Close
+        End If
+
         MessageBox.Show("Готово: " & log_path)
 
-
     Catch ex As Exception
+        If Not progress_bar Is Nothing Then
+            progress_bar.Close
+        End If
         ' Фатальная ошибка всего процесса
         MessageBox.Show("Ошибка: " & ex.Message)
     End Try
 
 End Sub
+
+Function count_unique_occurrences(occurrences As Object, visited As Object) As Integer
+
+    Dim total_count As Integer
+    total_count = 0
+
+    If occurrences Is Nothing Then
+        Return 0
+    End If
+
+    Dim occ As Object
+
+    For Each occ In occurrences
+
+        Try
+
+            Dim occ_document As Document
+            occ_document = Nothing
+
+            Try
+                occ_document = occ.Definition.Document
+            Catch
+            End Try
+
+            If occ_document Is Nothing Then
+                Continue For
+            End If
+
+            Dim key As String
+            key = occ_document.FullFileName
+
+            If visited.Exists(key) Then
+                If occ.SubOccurrences.Count > 0 Then
+                    total_count = total_count + count_unique_occurrences(occ.SubOccurrences, visited)
+                End If
+                Continue For
+            End If
+
+            visited.Add(key, True)
+            total_count = total_count + 1
+
+            If occ.SubOccurrences.Count > 0 Then
+                total_count = total_count + count_unique_occurrences(occ.SubOccurrences, visited)
+            End If
+
+        Catch
+        End Try
+
+    Next
+
+    Return total_count
+
+End Function
 
 
 ' =========================
@@ -135,7 +203,7 @@ End Sub
 ' =========================
 
 ' Рекурсивно обходит все вхождения сборки и обрабатывает документы
-Sub process_occurrences(occurrences As Object, worksheet As Object, visited As Object, ByRef log As String, debug_path As String)
+Sub process_occurrences(occurrences As Object, worksheet As Object, visited As Object, ByRef log As String, debug_path As String, progress_bar As Object, ByRef processed_documents As Integer, total_documents As Integer)
 
 ' Что делает:
 '
@@ -183,12 +251,12 @@ Sub process_occurrences(occurrences As Object, worksheet As Object, visited As O
                 visited.Add(key, True)
 
                 ' Обработка документа
-                process_document(occ_document, worksheet, visited, log, False, debug_path)
+                process_document(occ_document, worksheet, visited, log, False, debug_path, progress_bar, processed_documents, total_documents)
             End If
 
             ' Если есть вложенные элементы — уходим глубже
             If occ.SubOccurrences.Count > 0 Then
-                process_occurrences(occ.SubOccurrences, worksheet, visited, log, debug_path)
+                process_occurrences(occ.SubOccurrences, worksheet, visited, log, debug_path, progress_bar, processed_documents, total_documents)
             End If
 
         Catch ex As Exception
@@ -206,7 +274,7 @@ End Sub
 ' =========================
 
 ' Обрабатывает один документ Inventor на основе данных из Excel
-Sub process_document(doc As Document, worksheet As Object, visited As Object, ByRef log As String, is_root As Boolean, debug_path As String)
+Sub process_document(doc As Document, worksheet As Object, visited As Object, ByRef log As String, is_root As Boolean, debug_path As String, progress_bar As Object, ByRef processed_documents As Integer, total_documents As Integer)
 
 ' Что происходит внутри:
 '
@@ -222,6 +290,17 @@ Sub process_document(doc As Document, worksheet As Object, visited As Object, By
 ' 8. Закрытие (если не корневой)
 
     Try
+
+        processed_documents = processed_documents + 1
+
+        If Not progress_bar Is Nothing Then
+            Dim current_name As String
+            current_name = normalize_name(doc.DisplayName)
+            progress_bar.Message = _
+                "Заполнение метаданных: " & processed_documents & " / " & total_documents & _
+                ": " & current_name
+            progress_bar.UpdateProgress
+        End If
 
         Dim name As String
         ' Приведение имени файла к нормализованному виду

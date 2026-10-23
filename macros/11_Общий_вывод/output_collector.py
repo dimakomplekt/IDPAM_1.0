@@ -35,13 +35,6 @@ SOURCE_SPECIFICATION = (
     / "4_СП"
 )
 
-SOURCE_INHERITANCE = (
-    Path("..")
-    / ".."
-    / "00153_PZ-EQT-INL-WAA-A"
-    / "3_Вывод"
-)
-
 
 # ------------------------------------------------------------
 # ЦЕЛЕВЫЕ ПАПКИ
@@ -52,38 +45,59 @@ OUTPUT_PDF = Path("PDF")
 OUTPUT_DXF = Path("DXF")
 OUTPUT_SPECIFICATION = Path("Спецификация")
 
+
+# ------------------------------------------------------------
+# ФИЧА НАСЛЕДИЯ ДОКУМЕНТОВ
+# ------------------------------------------------------------
+
+SOURCE_INHERITANCE = (
+    # Path("..")
+    # / ".."
+    # / "00153_PZ-EQT-INL-WAA-A"
+    # / "3_Вывод"
+)
+
 INHERITED_FILES = {
+
     OUTPUT_PDF: (
         Path("PDF"),
         [
-            "PZ.0060.0005",
-            "PZ.0060.0014",
-            "PZ.0060.0015",
-            "PZ.0060.0020",
-            "PZ.0060.0021",
-            "PZ.0060.0024",
-            "PZ.0060.0033",
-            "PZ.0060.0050",
-            "PZ.0060.0070",
-            "PZ.0060.0073",
-            "PZ.0060.0074",
-            "PZ.0060.0085",
-            "PZ.0060.0086",
-            "PZ.0060.0087",
-            "PZ.0060.0089",
-            "PZ.0060.0090",
-            "PZ.0060.0091",
-            "PZ.0060.0092",
-            "PZ.0060.0095",
-            "PZ.0060.0096",
-            "PZ.0060.0105",
+            # "PROJECT_Z.0005",
+            # "PROJECT_Z.0014",
+            # "PROJECT_Z.0015",
+            # "PROJECT_Z.0020",
+            # "PROJECT_Z.0021",
+            # "PROJECT_Z.0024",
+            # "PROJECT_Z.0033",
+            # "PROJECT_Z.0050",
+            # "PROJECT_Z.0070",
+            # "PROJECT_Z.0073",
+            # "PROJECT_Z.0074",
+            # "PROJECT_Z.0085",
+            # "PROJECT_Z.0086",
+            # "PROJECT_Z.0087",
+            # "PROJECT_Z.0089",
+            # "PROJECT_Z.0090",
+            # "PROJECT_Z.0091",
+            # "PROJECT_Z.0092",
+            # "PROJECT_Z.0095",
+            # "PROJECT_Z.0096",
+            # "PROJECT_Z.0105",
         ],
     ),
+
+
     OUTPUT_SPECIFICATION: (
         Path("Спецификация"),
-        ["PZ.0060.0031"],
+        [
+            # "PZ.0060.0031"
+        ],
     ),
 }
+
+# ------------------------------------------------------------
+# ФИЧА НАСЛЕДИЯ ДОКУМЕНТОВ
+# ------------------------------------------------------------
 
 
 # ------------------------------------------------------------
@@ -466,22 +480,27 @@ def main() -> None:
         output_folder=PROJECT_ROOT / OUTPUT_SPECIFICATION,
     )
 
+
+
+
     # --------------------------------------------------------
     # НАСЛЕДИЕ
     # --------------------------------------------------------
 
-    for output_folder, (source_subfolder, identifiers) in (
-        INHERITED_FILES.items()
-    ):
-        inherit_selected_files(
-            source_folder=(
-                PROJECT_ROOT
-                / SOURCE_INHERITANCE
-                / source_subfolder
-            ),
-            output_folder=PROJECT_ROOT / output_folder,
-            identifiers=identifiers,
-        )
+    # for output_folder, (source_subfolder, identifiers) in (
+    #     INHERITED_FILES.items()
+    # ):
+    #     inherit_selected_files(
+    #         source_folder=(
+    #             PROJECT_ROOT
+    #             / SOURCE_INHERITANCE
+    #             / source_subfolder
+    #         ),
+    #         output_folder=PROJECT_ROOT / output_folder,
+    #         identifiers=identifiers,
+    #     )
+
+
 
     print()
     print("=" * 70)

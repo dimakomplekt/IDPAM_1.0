@@ -25,15 +25,15 @@
 Макросы в пакете выполняют отдельные опции, устраняющие необходимость производить рутинные репетативные действия, отнимающие время у инженера. В перспективе, пакет должен включать в себя:
 
 
-1. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/1_Развертка_проекта.md) для развертки проекта - НЕ РЕАЛИЗОВАН ❌
-2. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/2_Автонумерация.md) для автонумерации на базе основного обозначения - НЕ РЕАЛИЗОВАН ❌
-3. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/3_Генератор_ведомости.md) для формирования xls-файла ведомости изделия для контроля метадаты компонентов - НЕ РЕАЛИЗОВАН ❌
-4. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/4_Заполнение_метадаты.md) для присвоения метадаты из xls-файла ведомости изделия проектным деталям и сборкам - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/4_Заполнение_метадаты) ✅
-5. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/5_Генаратор_чертежей.md) для автогенерации заготовок чертежей с заполненной метадатой - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/5_Генаратор_чертежей) ✅
-6. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/6_Заполнение_рамки.md) для перезаполнения данных в рамках чертежей - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/6_Заполнение_рамки) ✅
-7. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/7_Вывод_STEP.md) для вывода STEP-файлов проектных сборок - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/7_Вывод_STEP) ✅
-8. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/8_Вывод_DXF.md) для вывода DXF-файлов деталей из листового металла - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/8_Вывод_DXF) ✅
-9. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/9_Вывод_чертежей.md) для вывода PDF-файлов основных чертежей - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/9_Вывод_чертежей) ✅
+1. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/01_Развертка_проекта.md) для развертки проекта - НЕ РЕАЛИЗОВАН ❌
+2. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/02_Автонумерация.md) для автонумерации на базе основного обозначения - НЕ РЕАЛИЗОВАН ❌
+3. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/03_Генератор_ведомости.md) для формирования xls-файла ведомости изделия для контроля метадаты компонентов - НЕ РЕАЛИЗОВАН ❌
+4. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/04_Заполнение_метадаты.md) для присвоения метадаты из xls-файла ведомости изделия проектным деталям и сборкам - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/04_Заполнение_метадаты) ✅
+5. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/05_Генаратор_чертежей.md) для автогенерации заготовок чертежей с заполненной метадатой - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/05_Генаратор_чертежей) ✅
+6. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/06_Заполнение_рамки.md) для перезаполнения данных в рамках чертежей - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/06_Заполнение_рамки) ✅
+7. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/07_Вывод_STEP.md) для вывода STEP-файлов проектных сборок - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/7_Вывод_STEP) ✅
+8. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/08_Вывод_DXF.md) для вывода DXF-файлов деталей из листового металла - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/08_Вывод_DXF) ✅
+9. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/09_Вывод_чертежей.md) для вывода PDF-файлов основных чертежей - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/09_Вывод_чертежей) ✅
 10. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/10_Вывод_спецификаций.md) для вывода PDF-файлов спецификаций из xls-файлов, сгенерированных базовыми методами - НЕ РЕАЛИЗОВАН ❌
 11. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/11_Общий_вывод.md) для формирования общего вывода проекта - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/11_Общий_вывод) ✅
 12. [Макрос](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/Описание/11_Общий_вывод.md) для формирования архивной версии проекта - [РЕАЛИЗОВАН](https://github.com/dimakomplekt/IDPAM_1.0/tree/main/macros/11_Общий_вывод) ✅
